@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gợi ý sản phẩm RNN</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">RNN PRODUCT RECOMMENDER</p>
+      <h1>Sản phẩm phù hợp cho bước mua sắm tiếp theo.</h1>
+      <p class="intro">Nhập lịch sử các sản phẩm khách đã xem. Mô hình RNN đa tầng sẽ xếp hạng 5 gợi ý tiếp theo.</p>
+    </section>
+    <section class="panel">
+      <form method="post">
+        <label for="history">Product ID đã tương tác</label>
+        <textarea id="history" name="history" rows="4" placeholder="Ví dụ: 44600062, 3900821, 17200506">{{ history }}</textarea>
+        <p class="hint">Ngăn cách bằng dấu phẩy. Dùng tối đa 4 ID gần nhất; ID phải thuộc dữ liệu huấn luyện.</p>
+        <button type="submit">Tạo gợi ý <span aria-hidden="true">→</span></button>
+      </form>
+    </section>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    {% if recommendations %}
+    <section class="result" aria-live="polite">
+      <div><p class="eyebrow">TOP 5</p><h2>Gợi ý cho khách hàng</h2></div>
+      <div class="cards">
+      {% for item in recommendations %}
+        <article class="card">
+          <div class="rank">0{{ loop.index }}</div>
+          <p class="category">{{ item.category }}</p>
+          <h3>{{ item.brand }}</h3>
+          <p class="id">ID: {{ item.product_id }}</p>
+          <div class="meta"><span>{{ "{:,.2f}".format(item.price) }} USD</span><strong>{{ item.confidence }}%</strong></div>
+        </article>
+      {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>

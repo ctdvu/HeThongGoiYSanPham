@@ -1,0 +1,13 @@
+# Source logs are intentionally kept local: GitHub rejects files larger than 100 MB.
+data/*.csv
+
+# Generated local-only files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Keep the trained model because the Render web service requires it at runtime.
+!models/rnn_product_recommender.keras
+!models/artifacts.pkl
+!models/catalog.json
+!models/metrics.json
