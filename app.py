@@ -6,6 +6,13 @@ import os
 import pickle
 from pathlib import Path
 
+# Render's starter instances have limited CPU/RAM. These must be set before
+# TensorFlow is imported so one inference worker does not create many threads.
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
+os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import numpy as np
 from flask import Flask, render_template, request
 from tensorflow import keras
@@ -26,10 +33,17 @@ def load_resources():
         artifacts = pickle.load(file)
     with catalog_path.open(encoding="utf-8") as file:
         catalog = {str(item["product_id"]): item for item in json.load(file)}
-    return keras.models.load_model(model_path), artifacts, catalog
+    # compile=False avoids loading the optimizer, which is only needed for training.
+    return keras.models.load_model(model_path, compile=False), artifacts, catalog
 
 
 MODEL, ARTIFACTS, CATALOG = load_resources()
+
+if MODEL is not None:
+    # Make the first TensorFlow graph execution happen during service startup,
+    # rather than making the first user's POST request wait for initialization.
+    _warmup_tokens = np.zeros((1, ARTIFACTS["sequence_length"]), dtype="int32")
+    MODEL(_warmup_tokens, training=False).numpy()
 
 
 def product_details(product_id: str, confidence: float) -> dict:
@@ -51,7 +65,8 @@ def predict(history: list[str], k: int = 5) -> list[dict]:
     length = ARTIFACTS["sequence_length"]
     tokens = [mapping.get(product_id, 0) for product_id in history][-length:]
     tokens = [0] * (length - len(tokens)) + tokens
-    probabilities = MODEL.predict(np.array([tokens], dtype="int32"), verbose=0)[0]
+    # Calling the model directly is leaner than Model.predict for one request.
+    probabilities = MODEL(np.asarray([tokens], dtype="int32"), training=False).numpy()[0]
     ranked = probabilities.argsort()[-(k + len(history)):][::-1]
     result = []
     for token in ranked:
