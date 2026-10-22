@@ -1,4 +1,5 @@
 Flask>=3.0,<4.0
 gunicorn>=22.0,<24.0
-tensorflow-cpu>=2.16,<2.20
+# TensorFlow stable wheels are available for Python 3.11 (pinned in .python-version).
+tensorflow-cpu==2.19.1
 numpy>=1.26,<3.0
